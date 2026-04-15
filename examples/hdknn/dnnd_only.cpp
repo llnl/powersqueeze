@@ -10,7 +10,7 @@
 #include <psqz/tsv/graph.hpp>
 #include <psqz/utils/reader.hpp>
 
-#include <saltatlas/dnnd/dnnd_simple.hpp>
+#include <saltatlas/dnnd/dnnd.hpp>
 #include <saltatlas/dnnd/utility.hpp>
 
 #include <ygm/detail/collective.hpp>

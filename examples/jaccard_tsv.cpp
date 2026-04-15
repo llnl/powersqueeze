@@ -196,10 +196,10 @@ int main(int argc, char **argv) {
       world.cout0(params);
     }
 
-    // `krowkee::dispatch_with_sketch_sizes` is a convenience function that
-    // dispatches a compile-time sized version of the sketch workflow using
-    // runtime parameters.
-    krowkee::dispatch_with_sketch_sizes<jaccard_tsv, void>(
-        params.range_size(), params.replication_count(), world, params);
+    // `krowkee::dispatch` is a convenience function that dispatches a
+    // compile-time sized version of the sketch workflow using runtime
+    // parameters.
+    krowkee::dispatch<jaccard_tsv, void>{
+        params.range_size(), params.replication_count()}(world, params);
   }
 }
