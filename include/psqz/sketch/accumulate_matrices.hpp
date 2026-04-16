@@ -14,7 +14,8 @@
 namespace psqz::sketch {
 template <std::size_t RangeSize, std::size_t ReplicationCount,
           typename MatrixType, typename AdjacencyType,
-          typename SketchContainerType>
+          typename SketchContainerType, std::size_t FinalRangeSize = RangeSize,
+          std::size_t FinalReplicationCount = ReplicationCount>
 std::vector<MatrixType> accumulate_matrices(AdjacencyType       &adjacency,
                                             SketchContainerType &SAp1,
                                             const std::uint64_t &random_seed,
@@ -44,6 +45,19 @@ std::vector<MatrixType> accumulate_matrices(AdjacencyType       &adjacency,
   using double_transform_ptr_type =
       typename double_sketch_type::transform_ptr_type;
 
+  using final_double_sketch_type =
+      krowkee::sketch::DoubleSparseJLT<feature_type, RangeSize,
+                                       ReplicationCount, std::shared_ptr,
+                                       FinalRangeSize, FinalReplicationCount>;
+  using final_double_transform_type =
+      typename final_double_sketch_type::transform_type;
+  using final_double_transform_ptr_type =
+      typename final_double_sketch_type::transform_ptr_type;
+  using final_single_transform_type =
+      typename final_double_transform_type::col_transform_type;
+  using final_single_transform_ptr_type =
+      typename final_double_transform_type::col_transform_ptr_type;
+
   static_assert(
       std::is_same<single_transform_type,
                    typename double_transform_type::row_transform_type>::value);
@@ -51,27 +65,40 @@ std::vector<MatrixType> accumulate_matrices(AdjacencyType       &adjacency,
       std::is_same<single_transform_type,
                    typename double_transform_type::col_transform_type>::value);
 
+  static_assert(
+      std::is_same<
+          typename double_transform_type::col_transform_type,
+          typename final_double_transform_type::row_transform_type>::value);
+
   YGM_ASSERT_RELEASE(transform_count > 0 && transform_count < 10);
+
+  const int single_transform_count = transform_count - 1;
+  const int double_transform_count = transform_count - 2;
 
   ygm::comm &comm = SAp1.comm();
 
   // We create a vector of shared pointers for each of the individual
   // sketch transforms.
   std::vector<single_transform_ptr_type> single_transform_ptrs;
-  for (int i(0); i < transform_count; ++i) {
+  for (int i(0); i < single_transform_count; ++i) {
     single_transform_ptrs.push_back(
         std::make_shared<single_transform_type>(random_seed + i));
   }
   // Using these shared pointers, we now create a vector of pointers to all of
   // the two-sided sketch transforms.
   std::vector<double_transform_ptr_type> double_transform_ptrs;
-  for (int i(0); i < transform_count - 1; ++i) {
+  for (int i(0); i < double_transform_count; ++i) {
     double_transform_ptrs.push_back(std::make_shared<double_transform_type>(
         single_transform_ptrs[i], single_transform_ptrs[i + 1]));
   }
 
-  // We create the parallel two-sided matrices
-  std::vector<MatrixType> double_matrices;
+  final_single_transform_ptr_type final_single_transform(
+      std::make_shared<final_single_transform_type>(random_seed +
+                                                    transform_count));
+  final_double_transform_ptr_type final_double_transform(
+      std::make_shared<final_double_transform_type>(
+          single_transform_ptrs.back(), final_single_transform));
+
   // We also create local double-sided sketches that will hold the double
   // sided embeddings.
   std::vector<double_sketch_type> double_sketches;
@@ -79,12 +106,13 @@ std::vector<MatrixType> accumulate_matrices(AdjacencyType       &adjacency,
        double_transform_ptrs) {
     double_sketches.emplace_back(double_transform_ptr);
   }
+  final_double_sketch_type final_double_sketch(final_double_transform);
 
   single_sketch_type col_sketch(single_transform_ptrs[0]);
 
-  adjacency.for_all([&col_sketch, &SAp1, &double_sketches](
-                        const index_type         &col_idx,
-                        const adjacency_vec_type &col_adj) {
+  adjacency.for_all([&col_sketch, &SAp1, &double_sketches,
+                     &final_double_sketch](const index_type         &col_idx,
+                                           const adjacency_vec_type &col_adj) {
     col_sketch.clear();
     for (const adjacency_elt_type &row : col_adj) {
       const index_type  &row_idx = row.first;
@@ -93,6 +121,7 @@ std::vector<MatrixType> accumulate_matrices(AdjacencyType       &adjacency,
       for (double_sketch_type &double_sketch : double_sketches) {
         double_sketch.insert({row_idx, col_idx}, wgt);
       }
+      final_double_sketch.insert({row_idx, col_idx}, wgt);
     }
 
     // assumes that adjacency and SAp1 share the same partitioning scheme.
@@ -107,6 +136,9 @@ std::vector<MatrixType> accumulate_matrices(AdjacencyType       &adjacency,
     SAp1.local_visit(col_idx, update_lambda, col_sketch.scaled_registers());
   });
   comm.barrier();
+
+  // We create the parallel two-sided matrices
+  std::vector<MatrixType> double_matrices;
 
   // We dump the contents of the S^tAR embeddings to Eigen matrices. Each rank
   // will hold their local updates, and then we allreduce the matrices so that
@@ -125,6 +157,17 @@ std::vector<MatrixType> accumulate_matrices(AdjacencyType       &adjacency,
     // apply scaling factor
     double_matrices[i] /= double_transform_type::scaling_factor;
   }
+  // repeat for final matrix
+  const MatrixType &final_double_matrix =
+      final_double_sketch.container().registers();
+  double_matrices.push_back(
+      MatrixType::Zero(final_double_matrix.rows(), final_double_matrix.cols()));
+  YGM_ASSERT_MPI(MPI_Allreduce(
+      final_double_matrix.data(), double_matrices.back().data(),
+      final_double_matrix.rows() * final_double_matrix.cols(),
+      ygm::detail::mpi_typeof(feature_type()), MPI_SUM, comm.get_mpi_comm()));
+  // apply scaling factor
+  double_matrices.back() /= final_double_transform_type::scaling_factor;
 
   return double_matrices;
 }

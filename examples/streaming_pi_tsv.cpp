@@ -22,7 +22,8 @@
 #include <unordered_map>
 
 // Add a output prefix parameter.
-using parameters_type = example::parameters<psqz::sketch::tsv::parameters>;
+using parameters_type =
+    example::parameters<psqz::sketch::streaming::tsv::parameters>;
 
 constexpr auto parse_cmd_line = psqz::parse_cmd_line<parameters_type>;
 
@@ -32,7 +33,9 @@ constexpr auto parse_cmd_line = psqz::parse_cmd_line<parameters_type>;
 // `RangeSize` and `ReplicationCount` that are set by the CLI flags `-r` and
 // `-R`. For fixed sketch size parameters, one could simple write
 // `streaming_pi_tsv::operator()` as the body of the main function.
-template <std::size_t RangeSize, std::size_t ReplicationCount>
+template <std::size_t RangeSize, std::size_t ReplicationCount,
+          std::size_t FinalRangeSize        = RangeSize,
+          std::size_t FinalReplicationCount = ReplicationCount>
 struct streaming_pi_tsv {
   using handler_type =
       psqz::handler<parameters_type, RangeSize, ReplicationCount,
@@ -123,50 +126,40 @@ struct streaming_pi_tsv {
     sketch_container_type this_sketch(world, params.vertex_count(), dummy);
     psqz::sketch::accumulate<RangeSize, ReplicationCount>(
         adjacency, this_sketch, params.random_seed());
-    sketch_accounting(handler, this_sketch, params, 1);
+    sketch_accounting(handler, this_sketch, params, 1, false);
 
-    std::vector<matrix_type> matrices =
-        psqz::sketch::accumulate_matrices<RangeSize, ReplicationCount,
-                                          matrix_type>(
-            adjacency, this_sketch, params.random_seed(), params.exponent());
-
-    // convert the std::vector to an Eigen::Vector. Might be replaced in the
-    // future.
-    vector_container_type this_embedding(
-        world, params.vertex_count(),
-        vector_type::Zero(handler_type::register_count));
-    this_sketch.for_all([&this_embedding](const index_type       &idx,
-                                          const feature_vec_type &sketch) {
-      auto update_lambda = [](const index_type &idx, vector_type &vec,
-                              const feature_vec_type &sketch) {
-        for (int i(0); i < sketch.size(); ++i) {
-          vec(static_cast<Eigen::Index>(i)) = (sketch[i]);
-        }
-      };
-      this_embedding.local_visit(idx, update_lambda, sketch);
-    });
-    world.barrier();
+    std::vector<matrix_type> matrices = psqz::sketch::accumulate_matrices<
+        RangeSize, ReplicationCount, matrix_type, adjacency_type,
+        sketch_container_type, FinalRangeSize, FinalReplicationCount>(
+        adjacency, this_sketch, params.random_seed(), params.exponent());
 
     // Here we perform the in-place matrix multiplications to compute streaming
-    // sketches of the powers of the adjacency matrix, repeating up to the
-    // desired target power.
-    int exponent{1};
-    while (++exponent <= params.exponent()) {
-      vector_container_type next_embedding(
-          world, params.vertex_count(),
-          vector_type::Zero(handler_type::register_count));
-      handler.reset_timer();
-      this_embedding.for_all(
-          [&matrices, &next_embedding, &exponent](
-              const index_type &idx, const vector_type &embedding) {
-            vector_type update = embedding.transpose() * matrices[exponent - 2];
-            next_embedding.local_insert(idx, update);
-          });
-      world.barrier();
-      sketch_accounting(handler, next_embedding, params, exponent);
-      this_embedding.local_swap(next_embedding);
-      handler.chirp_metric(sketch_name(exponent) + " swap time");
+    // sketches of the powers of the adjacency matrix to the desired target
+    // power. Unlike `power_iteration_tsv`, this does not support printing
+    // intermediate powers.
+    matrix_type partial_product = matrices.back();
+    for (int i = matrices.size() - 2; i >= 0; --i) {
+      partial_product = matrices[i] * partial_product;
     }
+
+    vector_container_type print_embedding(
+        world, params.vertex_count(),
+        vector_type::Zero(FinalRangeSize * FinalReplicationCount));
+    this_sketch.for_all(
+        [&print_embedding, &partial_product, &params](
+            const index_type &idx, const feature_vec_type &sketch) {
+          vector_type first_embedding =
+              vector_type::Zero(handler_type::register_count);
+          for (int i(0); i < sketch.size(); ++i) {
+            first_embedding(static_cast<Eigen::Index>(i)) = (sketch[i]);
+          }
+          vector_type final_embedding =
+              first_embedding.transpose() * partial_product;
+          print_embedding.local_insert(idx, final_embedding);
+        });
+    world.barrier();
+    sketch_accounting(handler, print_embedding, params, params.exponent(),
+                      false);
 
     handler.repeat_metrics();
   }
@@ -200,6 +193,9 @@ int main(int argc, char **argv) {
     // parameters.
     // krowkee::dispatch<streaming_pi_tsv, void>(params.range_size(),
     // params.replication_count()}(world, params);
-    streaming_pi_tsv<128, 4>{}(world, params);
+    krowkee::dispatch_rectangular<streaming_pi_tsv, void>{
+        params.range_size(), params.replication_count(),
+        params.final_range_size(),
+        params.final_replication_count()}(world, params);
   }
 }

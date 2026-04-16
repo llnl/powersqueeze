@@ -56,6 +56,43 @@ struct parameters : public BaseType {
     return ret;
   }
 };
+
+namespace streaming {
+template <typename BaseType>
+struct parameters : public psqz::sketch::detail::parameters<BaseType> {
+  using base_type = psqz::sketch::detail::parameters<BaseType>;
+
+  parameter<std::uint64_t> final_range_size;
+  parameter<std::uint64_t> final_replication_count;
+
+  parameters()
+      : base_type(),
+        final_range_size("final range_size",
+                         "Power of 2 size of final projection range", 'j', true,
+                         8),
+        final_replication_count(
+            "replication_count",
+            "Power of 2 number of replicated final projections", 'J', true, 1) {
+    this->_params.push_back(&final_range_size);
+    this->_params.push_back(&final_replication_count);
+  }
+
+  bool _help_needed() const override {
+    bool ret = base_type::_help_needed();
+    if (final_range_size() < 1) {
+      std::cout << "Must specify positive range size, not "
+                << final_range_size() << std::endl;
+      return true;
+    }
+    if (final_replication_count() < 1) {
+      std::cout << "Must specify positive replication count, not "
+                << final_replication_count() << std::endl;
+      return true;
+    }
+    return ret;
+  }
+};
+}  // namespace streaming
 }  // namespace detail
 
 namespace tsv {
@@ -70,5 +107,22 @@ using parameters =
 namespace kron {
 using parameters = psqz::sketch::detail::parameters<psqz::kron::parameters>;
 }
+
+namespace streaming {
+namespace tsv {
+using parameters =
+    psqz::sketch::detail::streaming::parameters<psqz::tsv::parameters>;
+
+namespace query_only {
+using parameters = psqz::sketch::detail::streaming::parameters<
+    psqz::tsv::query_only::parameters>;
+}
+}  // namespace tsv
+
+namespace kron {
+using parameters =
+    psqz::sketch::detail::streaming::parameters<psqz::kron::parameters>;
+}
+}  // namespace streaming
 
 }  // namespace psqz::sketch

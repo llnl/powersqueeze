@@ -32,20 +32,21 @@ $ ./examples/power_iteration_tsv -h
 Usage:
  -h             Indicates whether to print usage string
  -c <arg>       Number of vertices in the input graph
- -R <arg>       Random seed
+ -z <arg>       Random seed
  -B <arg>       Buffer size used during exponentiation (default \infty)
  -M <arg>       Metall datastore path (optional)
  -u             Indicates that the graph stream is undirected
  -m             Indicates ygm::map use (ygm::array otherwise)
  -V             Indicates whether to print verbose output
  -i <arg>       File containing data to build index (required)
- -g <arg>       File containing true communities
  -q <arg>       Optional file containing indices to query
+ -g <arg>       File containing true communities
  -r <arg>       Power of 2 size of projection range
+ -R <arg>       Power of 2 number of replicated projections
  -e <arg>       Integral power of data matrix
  -C             Perform chebyshev polynomial embedding
- -f <arg>       Path prefix for point outfiles
- -l <arg>       Path prefix for label outfiles
+ -f <arg>       Path for all outfiles
+ -E             Indicates whether to print all exponent sketches
 ```
 
 The `-i` flag indicates the file containing the input.
@@ -65,7 +66,9 @@ edge that is read, i.e. on reading the edge `(i, j)` also insert the edge
 This flag should be used for Graph Challenge data.
 
 The `-r` flag must be a power of two, and represents the number of dimensions
-into which the vertices will be projected.
+to be used for each countsketch projection. 
+The `-R` flag indicates the number of countsketch tiles to be used, so `-r` *
+`-R` is the number of dimensions into which the vertices will be projected.
 The `-e` flag is the exponent to which the adjacency matrix will be raised
 during power iteration.
 The cost of additional powers becomes constant after two or three iterations
@@ -79,11 +82,13 @@ This example is hard-coded to use arrays, but it is also possible to use
 `ygm::container::map`, which case `-c` is no longer required.
 The map-based workflow is more realistic for online applications where you
 don't know the size of your dataset ahead of time, but it makes the linear
-algebra noticably slower than using arrays.
+algebra noticeably slower than using arrays.
 
 The `-f` and `-l` arguments, if specified, indicate path prefixex to which the
 outfiles containing the created features and the true labels will be written,
 respectively.
+`-E` tells the code to print outfiles for each approximate exponent of the
+adjacency matrix, not just the final power.
 
 The `-B`, `-M`, `-q`, `-m`, and `-C` arguments are not used by this experiment,
 as the choices that they represent have been hard-coded in the source for the
@@ -165,7 +170,7 @@ $ ./examples/power_iteration_kron -h
 Usage:
  -h             Indicates whether to print usage string
  -c <arg>       Number of vertices in the input graph
- -R <arg>       Random seed
+ -z <arg>       Random seed
  -B <arg>       Buffer size used during exponentiation (default \infty)
  -M <arg>       Metall datastore path (optional)
  -u             Indicates that the graph stream is undirected
@@ -178,10 +183,11 @@ Usage:
  -a <arg>       power (a>1.0) of expected mean degree log(|V(A)| * |V(B)|)^a
  -b <arg>       ratio (b>1.0) of intra-community to inter-community preservation
  -r <arg>       Power of 2 size of projection range
+ -R <arg>       Power of 2 number of replicated projections
  -e <arg>       Integral power of data matrix
  -C             Perform chebyshev polynomial embedding
- -f <arg>       Path prefix for point outfiles
- -l <arg>       Path prefix for label outfiles
+ -f <arg>       Path for all outfiles
+ -E             Indicates whether to print all exponent sketches
 ```
 
 Many of these arguments are explained in the description of
@@ -247,3 +253,113 @@ You need only specify two valid numbers of vertices
 graphs to use.
 It is possible to compute products of a graph with itself, such as in the above
 example.
+
+
+## streaming_pi_tsv.cpp
+
+This file illustrates `powersqueeze`'s fully streaming functionality on tsv data
+that is organized like the streaming partition challenge datasets from the HPEC
+[graph challenge dataset](https://graphchallenge.mit.edu/data-sets).
+This workflow is more complex than that in `power_iteration_tsv.cpp`, and
+involves computing moderately large square sketch matrices and multiplying them
+together to obtain the final embedding.
+
+### CLI
+
+You can view the CLI of the `streaming_pi_tsv` executable by running
+
+```
+$ ./examples/streaming_pi_tsv -h
+Usage:
+ -h             Indicates whether to print usage string
+ -c <arg>       Number of vertices in the input graph
+ -z <arg>       Random seed
+ -B <arg>       Buffer size used during exponentiation (default \infty)
+ -M <arg>       Metall datastore path (optional)
+ -u             Indicates that the graph stream is undirected
+ -m             Indicates ygm::map use (ygm::array otherwise)
+ -V             Indicates whether to print verbose output
+ -i <arg>       File containing data to build index (required)
+ -q <arg>       Optional file containing indices to query
+ -g <arg>       File containing true communities
+ -r <arg>       Power of 2 size of projection range
+ -R <arg>       Power of 2 number of replicated projections
+ -e <arg>       Integral power of data matrix
+ -C             Perform chebyshev polynomial embedding
+ -j <arg>       Power of 2 size of final projection range
+ -J <arg>       Power of 2 number of replicated final projections
+ -f <arg>       Path for all outfiles
+ -E             Indicates whether to print all exponent sketches
+```
+
+The `-j` and `-J` flags are the only new additions, which indicate the range
+size and replication count of the final projection dimension.
+In general, one will want to set `-r` and `-R` to be fairly large and `-j` and
+`-J` fairly small to maintain a sufficiently expressive sketch with small memory
+footprint.
+All of these flags must be a power of two.
+Also, the `-E` flag is always ignored.
+
+### Outfiles
+
+The outfiles are the same as `power_iteration_tsv.cpp`, with the exception that
+`streaming_pi_tsv` does not support the printing of intermediate powers. Thus,
+only the final embedding will be returned.
+
+### Example invocation
+
+Invocation is very similar to `power_iteration_tsv.cpp`, except that `-E` is
+ignored.
+
+## jaccard_tsv.hpp
+
+Perhaps the simplest example, `jaccard_tsv.hpp` simply estimates the Jaccard
+similarity using a simple inclusion-exclusion subtraction.
+However, it is not possible to provide error guarantees in general, so sets with
+small true Jaccard similarity (very small intersection relative to the set
+dimesionality) will have large error.
+
+### CLI
+
+You can view the CLI of the `jaccard_tsv.hpp` executable by running
+
+```
+# ./examples/jaccard_tsv -h
+ -h             Indicates whether to print usage string
+ -c <arg>       Number of vertices in the input graph
+ -z <arg>       Random seed
+ -B <arg>       Buffer size used during exponentiation (default \infty)
+ -M <arg>       Metall datastore path (optional)
+ -u             Indicates that the graph stream is undirected
+ -m             Indicates ygm::map use (ygm::array otherwise)
+ -V             Indicates whether to print verbose output
+ -i <arg>       File containing data to build index (required)
+ -q <arg>       Optional file containing indices to query
+ -g <arg>       File containing true communities
+ -r <arg>       Power of 2 size of projection range
+ -R <arg>       Power of 2 number of replicated projections
+ -e <arg>       Integral power of data matrix
+ -C             Perform chebyshev polynomial embedding
+ -f <arg>       Path for all outfiles
+```
+
+These flags have the same interpretation as the above, although note that many
+are ignored, such as `-e` and `-C`.
+
+### Outfiles
+
+The outfiles are the same as `power_iteration_tsv.cpp`, with the exception that
+`jaccard_tsv.hpp` has no powers and so only a single. Thus,
+only the final embedding will be returned.
+
+### Example invocation
+
+Invocation is very similar to `power_iteration_tsv.cpp`, with no `-e`
+invocation.
+
+```
+$ mpirun -n 4 ./examples/jaccard_tsv \
+  -i /Users/priest2/workspace/nisenemarks/data/2017/5000/parts.txt \
+  -g /Users/priest2/workspace/nisenemarks/data/2017/5000/gt_parts.txt \
+  -c 5000 -r 32 -R 1 -e 1 -V -f tmp
+```

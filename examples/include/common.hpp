@@ -79,13 +79,13 @@ template <typename HandlerType, typename SketchContainerType,
           typename ParametersType>
 void sketch_accounting(HandlerType          &handler,
                        SketchContainerType  &sketch_container,
-                       const ParametersType &params, const int exponent) {
+                       const ParametersType &params, const int exponent,
+                       const int all_exponents) {
   std::string name(sketch_name(exponent));
   handler.chirp_metric(name + " accumulate time");
   sketch_stats(handler, sketch_container, name);
   if (!params.file_directory().empty()) {
-    if (params.all_exponents() ||
-        (!params.all_exponents() && exponent == params.exponent())) {
+    if (all_exponents || (!all_exponents && exponent == params.exponent())) {
       std::filesystem::path path(params.file_directory());
       psqz::create_directory_if_not_exists(path);
       psqz::create_directory_if_not_exists(path / "features");
@@ -93,6 +93,15 @@ void sketch_accounting(HandlerType          &handler,
       handler.chirp_metric(name + " write time");
     }
   }
+}
+
+template <typename HandlerType, typename SketchContainerType,
+          typename ParametersType>
+void sketch_accounting(HandlerType          &handler,
+                       SketchContainerType  &sketch_container,
+                       const ParametersType &params, const int exponent) {
+  sketch_accounting(handler, sketch_container, params, exponent,
+                    params.all_exponents());
 }
 
 template <typename HandlerType, typename AdjacencyType, typename TruthType>
