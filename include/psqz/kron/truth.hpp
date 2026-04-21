@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <psqz/kron/adjacency.hpp>
 #include <psqz/kron/reader.hpp>
 
 #include <sstream>

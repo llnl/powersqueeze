@@ -35,8 +35,8 @@ struct power_iteration_kron {
                     psqz::ygm_array, std::vector, float, std::size_t, float,
                     std::size_t>;
 
-  using adjacency_fn = psqz::kron::adjacency<handler_type>;
-  using truth_fn     = psqz::kron::truth<handler_type>;
+  using edge_streamer_fn = psqz::kron::edge_streamer<handler_type>;
+  using truth_fn         = psqz::kron::truth<handler_type>;
 
   using index_type            = handler_type::index_type;
   using feature_type          = handler_type::feature_type;
@@ -61,7 +61,7 @@ struct power_iteration_kron {
     // challenge data in two tsv files that will be used to create a kronecker
     // product.
     //
-    // `adjacency_fn` is a functor that takes the `handler` and, upon
+    // `edge_streamer_fn` is a functor that takes the `handler` and, upon
     // invocation, returns an `adjacency_type` object, which is a ygm container
     // with `index_type` keys and `adjacency_vec_type` values. Internally, it
     // reads from two tsv files listing edges in two SBM graphs. it then forms a
@@ -80,7 +80,7 @@ struct power_iteration_kron {
     // wrapped in an `adjacency` class that inherits from
     // `psqz::graph::adjacency` to use this same workflow, possibly in addition
     // to a new `parameters` class to handle new parameters of your I/O.
-    adjacency_type adjacency = adjacency_fn{handler}();
+    adjacency_type adjacency = edge_streamer_fn{handler}();
 
     // collect the ground truth
     //

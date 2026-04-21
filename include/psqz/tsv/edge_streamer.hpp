@@ -18,13 +18,13 @@ std::string map_name(std::string &&name, ParametersType &params) {
 
 template <typename HandlerType,
           template <typename, template <typename> class> class BaseType>
-struct adjacency : public BaseType<HandlerType, psqz::tsv::reader> {
+struct edge_streamer : public BaseType<HandlerType, psqz::tsv::reader> {
   using handler_type = HandlerType;
   using base_type    = BaseType<handler_type, psqz::tsv::reader>;
   using reader_type  = typename base_type::reader_type;
 
  public:
-  adjacency(handler_type &handler) : base_type(handler) {}
+  edge_streamer(handler_type &handler) : base_type(handler) {}
 
   std::string local_map_name() const override {
     return map_name(this->name(), this->_params);

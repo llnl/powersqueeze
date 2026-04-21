@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <psqz/tsv/adjacency.hpp>
 #include <psqz/tsv/reader.hpp>
 
 #include <sstream>

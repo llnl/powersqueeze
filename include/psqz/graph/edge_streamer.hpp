@@ -16,9 +16,45 @@
 
 namespace psqz::graph {
 
+// template <template <typename, typename> class ContainerType,
+//           template <typename> class VecType = std::vector,
+//           typename IndexType                = std::size_t>
+// struct square_undirected_adjacency {
+//   using index_type     = IndexType;
+//   using index_vec_type = VecType<index_type>;
+
+//   using container_type = ContainerType<index_type, index_vec_type>;
+
+//  private:
+//   container_type row_container;
+
+//  public:
+//   square_undirected_adjacency(ygm::comm            &comm,
+//                               const index_vec_type &default_value,
+//                               std::size_t           vertex_count)
+//       : row_container(
+//             psqz::spawn<ContainerType, index_type, Point>(comm, dummy, size))
+//             {}
+
+//   template <typename... Args>
+//   void for_all_rows(Args &...args) {
+//     row_container.for_all(args...);
+//   }
+
+//   template <typename... Args>
+//   void for_all_cols(Args &...args) {
+//     row_container.for_all_cols(args...);
+//   }
+
+//   template <typename... Args>
+//   void for_all_cols(Args &...args) {
+//     row_container.for_all_cols(args...);
+//   }
+// };
+
 namespace detail {
 template <typename HandlerType, template <typename> class ReaderType>
-struct adjacency {
+struct edge_streamer {
   using handler_type       = HandlerType;
   using parameters_type    = typename handler_type::parameters_type;
   using index_type         = typename handler_type::index_type;
@@ -41,7 +77,7 @@ struct adjacency {
   const parameters_type &_params;
 
  public:
-  adjacency(handler_type &handler)
+  edge_streamer(handler_type &handler)
       : _handler(handler), _comm(_handler.comm()), _params(_handler.params()) {}
 
   ygm::comm             &comm() { return _comm; }
@@ -179,24 +215,24 @@ struct normalize {
 
 }  // namespace detail
 
-template <typename HandlerType, template <typename> class AdjacencyType>
-struct adjacency {
+template <typename HandlerType, template <typename> class EdgeStreamType>
+struct edge_streamer {
   using handler_type   = HandlerType;
   using adjacency_type = typename handler_type::adjacency_type;
 #if __has_include(<metall/metall.hpp>)
   using adjacency_func =
-      psqz::mtl::vectorized_wrapper<AdjacencyType<handler_type>>;
+      psqz::mtl::vectorized_wrapper<EdgeStreamType<handler_type>>;
 #else
-  using adjacency_func = AdjacencyType<handler_type>;
+  using edge_streamer_func = EdgeStreamType<handler_type>;
 #endif
 
  protected:
-  adjacency_func _adjacency_fn;
+  edge_streamer_func _edge_streamer_fn;
 
  public:
-  adjacency(handler_type &handler) : _adjacency_fn(handler) {}
+  edge_streamer(handler_type &handler) : _edge_streamer_fn(handler) {}
 
-  adjacency_type operator()() { return _adjacency_fn(); }
+  adjacency_type operator()() { return _edge_streamer_fn(); }
 };
 
 template <typename HandlerType, template <typename> class AdjacencyType,

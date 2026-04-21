@@ -177,8 +177,8 @@ struct power_iteration_tsv {
                     psqz::ygm_array, std::vector, float, std::size_t, float,
                     std::string>;
 
-  using adjacency_fn = psqz::tsv::adjacency<handler_type>;
-  using truth_fn     = wdc::truth<handler_type>;
+  using edge_streamer_fn = psqz::tsv::edge_streamer<handler_type>;
+  using truth_fn         = wdc::truth<handler_type>;
 
   using index_type            = handler_type::index_type;
   using feature_type          = handler_type::feature_type;
@@ -202,7 +202,7 @@ struct power_iteration_tsv {
     // this implementation assumes that the data is formatted like HPEC graph
     // challenge data in tsv file(s).
     //
-    // `adjacency_fn` is a functor that takes the `handler` and, upon
+    // `edge_streamer_fn` is a functor that takes the `handler` and, upon
     // invocation, returns an `adjacency_type` object, which is a ygm container
     // with `index_type` keys and `adjacency_vec_type` values.
     //
@@ -210,7 +210,7 @@ struct power_iteration_tsv {
     // wrapped in an `adjacency` class that inherits from
     // `psqz::graph::adjacency` to use this same workflow, possibly in addition
     // to a new `parameters_type` class to handle parameters of your I/O.
-    adjacency_type adjacency = adjacency_fn{handler}();
+    adjacency_type adjacency = edge_streamer_fn{handler}();
 
     // collect the ground truth
     //

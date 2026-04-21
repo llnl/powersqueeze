@@ -3,17 +3,18 @@
 
 #pragma once
 
-#include <psqz/graph/adjacency.hpp>
+#include <psqz/graph/edge_streamer.hpp>
 #include <psqz/graph/truth.hpp>
-#include <psqz/kron/adjacency.hpp>
+#include <psqz/kron/edge_streamer.hpp>
 #include <psqz/kron/truth.hpp>
 
 namespace psqz::kron {
 
 namespace core {
 template <typename HandlerType>
-using adjacency =
-    psqz::kron::detail::adjacency<HandlerType, psqz::graph::detail::adjacency>;
+using edge_streamer =
+    psqz::kron::detail::edge_streamer<HandlerType,
+                                      psqz::graph::detail::edge_streamer>;
 template <typename HandlerType>
 using normalize =
     psqz::kron::detail::normalize<HandlerType, psqz::graph::detail::normalize>;
@@ -26,10 +27,11 @@ using queries =
 }  // namespace core
 
 template <typename HandlerType>
-using adjacency = psqz::graph::adjacency<HandlerType, core::adjacency>;
+using edge_streamer =
+    psqz::graph::edge_streamer<HandlerType, core::edge_streamer>;
 template <typename HandlerType>
 using normalized_adjacency =
-    psqz::graph::normalized_adjacency<HandlerType, core::adjacency,
+    psqz::graph::normalized_adjacency<HandlerType, core::edge_streamer,
                                       core::normalize>;
 template <typename HandlerType>
 using truth = psqz::graph::truth<HandlerType, core::truth>;
