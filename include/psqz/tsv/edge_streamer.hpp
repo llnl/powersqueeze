@@ -36,12 +36,12 @@ struct edge_streamer : public BaseType<HandlerType, psqz::tsv::reader> {
 };
 
 template <typename HandlerType, template <typename> class BaseType>
-struct normalize : public BaseType<HandlerType> {
+struct adjacency_normalizer : public BaseType<HandlerType> {
   using handler_type = HandlerType;
   using base_type    = BaseType<handler_type>;
 
  public:
-  normalize(handler_type &handler) : base_type(handler) {}
+  adjacency_normalizer(handler_type &handler) : base_type(handler) {}
 
   std::string local_map_name() const override {
     return map_name(this->name(), this->_params);

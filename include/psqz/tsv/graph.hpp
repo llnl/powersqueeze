@@ -16,8 +16,8 @@ using edge_streamer =
     psqz::tsv::detail::edge_streamer<HandlerType,
                                      psqz::graph::detail::edge_streamer>;
 template <typename HandlerType>
-using normalize =
-    psqz::tsv::detail::normalize<HandlerType, psqz::graph::detail::normalize>;
+using adjacency_normalizer = psqz::tsv::detail::adjacency_normalizer<
+    HandlerType, psqz::graph::detail::adjacency_normalizer>;
 template <typename HandlerType>
 using truth = psqz::tsv::detail::truth<HandlerType, psqz::graph::detail::truth>;
 template <typename HandlerType>
@@ -29,9 +29,9 @@ template <typename HandlerType>
 using edge_streamer =
     psqz::graph::edge_streamer<HandlerType, core::edge_streamer>;
 template <typename HandlerType>
-using normalized_adjacency =
-    psqz::graph::normalized_adjacency<HandlerType, core::edge_streamer,
-                                      core::normalize>;
+using normalized_edge_streamer =
+    psqz::graph::normalized_edge_streamer<HandlerType, core::edge_streamer,
+                                          core::adjacency_normalizer>;
 template <typename HandlerType>
 using truth = psqz::graph::truth<HandlerType, core::truth>;
 template <typename HandlerType>

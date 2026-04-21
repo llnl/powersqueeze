@@ -130,7 +130,7 @@ struct edge_streamer {
 };
 
 template <typename HandlerType>
-struct normalize {
+struct adjacency_normalizer {
   using handler_type          = HandlerType;
   using parameters_type       = typename handler_type::parameters_type;
   using index_type            = typename handler_type::index_type;
@@ -154,7 +154,7 @@ struct normalize {
   const parameters_type &_params;
 
  public:
-  normalize(handler_type &handler)
+  adjacency_normalizer(handler_type &handler)
       : _handler(handler), _comm(_handler.comm()), _params(_handler.params()) {}
 
   ygm::comm             &comm() { return _comm; }
@@ -215,15 +215,15 @@ struct normalize {
 
 }  // namespace detail
 
-template <typename HandlerType, template <typename> class EdgeStreamType>
+template <typename HandlerType, template <typename> class EdgeStreamerType>
 struct edge_streamer {
   using handler_type   = HandlerType;
   using adjacency_type = typename handler_type::adjacency_type;
 #if __has_include(<metall/metall.hpp>)
-  using adjacency_func =
-      psqz::mtl::vectorized_wrapper<EdgeStreamType<handler_type>>;
+  using edge_streamer_func =
+      psqz::mtl::vectorized_wrapper<EdgeStreamerType<handler_type>>;
 #else
-  using edge_streamer_func = EdgeStreamType<handler_type>;
+  using edge_streamer_func = EdgeStreamerType<handler_type>;
 #endif
 
  protected:
@@ -235,38 +235,38 @@ struct edge_streamer {
   adjacency_type operator()() { return _edge_streamer_fn(); }
 };
 
-template <typename HandlerType, template <typename> class AdjacencyType,
-          template <typename> class NormalizeType>
-struct normalized_adjacency {
+template <typename HandlerType, template <typename> class EdgeStreamerType,
+          template <typename> class AdjacencyNormalizerType>
+struct normalized_edge_streamer {
   using handler_type   = HandlerType;
   using adjacency_type = typename handler_type::adjacency_type;
 #if __has_include(<metall/metall.hpp>)
   using adjacency_func =
-      psqz::mtl::vectorized_wrapper<AdjacencyType<handler_type>>;
+      psqz::mtl::vectorized_wrapper<EdgeStreamerType<handler_type>>;
   using normalize_func =
-      psqz::mtl::vectorized_wrapper<NormalizeType<handler_type>>;
+      psqz::mtl::vectorized_wrapper<AdjacencyNormalizerType<handler_type>>;
   using mtl_map_type = typename adjacency_func::mtl_map_type;
 #else
-  using adjacency_func = AdjacencyType<handler_type>;
-  using normalize_func = NormalizeType<handler_type>;
+  using edge_streamer_func        = EdgeStreamerType<handler_type>;
+  using adjacency_normalizer_func = AdjacencyNormalizerType<handler_type>;
 #endif
 
  protected:
-  adjacency_func _adjacency_fn;
-  normalize_func _normalize_fn;
+  edge_streamer_func        _edge_streamer_fn;
+  adjacency_normalizer_func _adjacency_normalizer_fn;
 
  public:
-  normalized_adjacency(handler_type &handler)
-      : _adjacency_fn(handler), _normalize_fn(handler) {}
+  normalized_edge_streamer(handler_type &handler)
+      : _edge_streamer_fn(handler), _adjacency_normalizer_fn(handler) {}
 
   adjacency_type operator()() {
 #if __has_include(<metall/metall.hpp>)
-    if (_normalize_fn.exists()) {
-      return _normalize_fn();
+    if (_adjacency_normalizer_fn.exists()) {
+      return _adjacency_normalizer_fn();
     }
 #endif
-    adjacency_type adjacency = _adjacency_fn();
-    return _normalize_fn(adjacency);
+    adjacency_type adjacency = _edge_streamer_fn();
+    return _adjacency_normalizer_fn(adjacency);
   }
 };
 
