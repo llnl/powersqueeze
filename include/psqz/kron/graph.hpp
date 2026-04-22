@@ -27,12 +27,12 @@ using queries =
 }  // namespace core
 
 template <typename HandlerType>
-using edge_streamer =
-    psqz::graph::edge_streamer<HandlerType, core::edge_streamer>;
+using adjacency_streamer =
+    psqz::graph::adjacency_streamer<HandlerType, core::edge_streamer>;
 template <typename HandlerType>
-using normalized_edge_streamer =
-    psqz::graph::normalized_edge_streamer<HandlerType, core::edge_streamer,
-                                          core::adjacency_normalizer>;
+using normalized_adjacency_streamer =
+    psqz::graph::normalized_adjacency_streamer<HandlerType, core::edge_streamer,
+                                               core::adjacency_normalizer>;
 template <typename HandlerType>
 using truth = psqz::graph::truth<HandlerType, core::truth>;
 template <typename HandlerType>

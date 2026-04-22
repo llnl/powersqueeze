@@ -216,7 +216,7 @@ struct adjacency_normalizer {
 }  // namespace detail
 
 template <typename HandlerType, template <typename> class EdgeStreamerType>
-struct edge_streamer {
+struct adjacency_streamer {
   using handler_type   = HandlerType;
   using adjacency_type = typename handler_type::adjacency_type;
 #if __has_include(<metall/metall.hpp>)
@@ -230,14 +230,14 @@ struct edge_streamer {
   edge_streamer_func _edge_streamer_fn;
 
  public:
-  edge_streamer(handler_type &handler) : _edge_streamer_fn(handler) {}
+  adjacency_streamer(handler_type &handler) : _edge_streamer_fn(handler) {}
 
   adjacency_type operator()() { return _edge_streamer_fn(); }
 };
 
 template <typename HandlerType, template <typename> class EdgeStreamerType,
           template <typename> class AdjacencyNormalizerType>
-struct normalized_edge_streamer {
+struct normalized_adjacency_streamer {
   using handler_type   = HandlerType;
   using adjacency_type = typename handler_type::adjacency_type;
 #if __has_include(<metall/metall.hpp>)
@@ -256,7 +256,7 @@ struct normalized_edge_streamer {
   adjacency_normalizer_func _adjacency_normalizer_fn;
 
  public:
-  normalized_edge_streamer(handler_type &handler)
+  normalized_adjacency_streamer(handler_type &handler)
       : _edge_streamer_fn(handler), _adjacency_normalizer_fn(handler) {}
 
   adjacency_type operator()() {

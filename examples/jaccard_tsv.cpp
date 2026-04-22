@@ -72,9 +72,9 @@ struct jaccard_tsv {
                     psqz::ygm_array, std::vector, float, std::size_t, float,
                     std::size_t>;
 
-  using edge_streamer_fn = psqz::tsv::edge_streamer<handler_type>;
-  using truth_fn         = psqz::tsv::truth<handler_type>;
-  using query_fn         = psqz::tsv::queries<handler_type>;
+  using adjacency_streamer_fn = psqz::tsv::adjacency_streamer<handler_type>;
+  using truth_fn              = psqz::tsv::truth<handler_type>;
+  using query_fn              = psqz::tsv::queries<handler_type>;
 
   using index_type            = handler_type::index_type;
   using feature_type          = handler_type::feature_type;
@@ -99,7 +99,7 @@ struct jaccard_tsv {
     // this implementation assumes that the data is formatted like HPEC graph
     // challenge data.
     //
-    // `edge_streamer_fn` is a functor that takes the `handler` and, upon
+    // `adjacency_streamer_fn` is a functor that takes the `handler` and, upon
     // invocation, returns an `adjacency_type` object, which is a ygm container
     // with `index_type` keys and `adjacency_vec_type` values. Internally, it
     // reads from a tsv file listing edges in an SBM graph.
@@ -112,7 +112,7 @@ struct jaccard_tsv {
     // wrapped in an `adjacency` class that inherits from
     // `psqz::graph::adjacency` to use this same workflow, possibly in addition
     // to a new `parameters` class to handle new parameters of your I/O.
-    adjacency_type adjacency = edge_streamer_fn{handler}();
+    adjacency_type adjacency = adjacency_streamer_fn{handler}();
 
     // report information
     //
