@@ -39,7 +39,7 @@ struct power_iteration_kron {
                     adjacency_type, float, std::size_t>;
 
   using adjacency_streamer_fn = psqz::kron::adjacency_streamer<handler_type>;
-  using truth_fn              = psqz::kron::truth<handler_type>;
+  using truth_streamer_fn     = psqz::kron::truth_streamer<handler_type>;
 
   using index_type            = handler_type::index_type;
   using feature_type          = handler_type::feature_type;
@@ -64,24 +64,27 @@ struct power_iteration_kron {
     // product.
     //
     // `adjacency_streamer_fn` is a functor that takes the `handler` and, upon
-    // invocation, returns an `adjacency_type` object, which is a ygm container
-    // with `index_type` keys and `adjacency_vec_type` values. Internally, it
-    // reads from two tsv files listing edges in two SBM graphs. it then forms a
-    // Kronecker product graph, where each potential product edge is included
-    // with probability `intra_probability` if the edge is internal to a product
-    // community, and with probability `inter_probability` otherwise. these
-    // probabilities can be set from the command line. note that if these values
-    // are too small, there can be empty rows/columns in the resulting Kronecker
+    // invocation, returns an `adjacency_type` object, which wraps a ygm
+    // container(s) with `index_type` keys and `adjacency_vec_type` values.
+    //
+    // Internally, it reads from two tsv files listing edges in two SBM graphs.
+    // it then forms a Kronecker product graph, where each potential product
+    // edge is included with probability `intra_probability` if the edge
+    // is internal to a product community, and with probability
+    // `inter_probability` otherwise. these probabilities can be set
+    // from the command line. note that if these values are too small,
+    // there can be empty rows/columns in the resulting Kronecker
     // adjacency matrix.
     //
-    // This is currently a dense representation of the adjacency matrix, so for
-    // very large, very dense, or very skewed degree distribution graphs this
-    // could be a bottleneck in the workflow.
+    // This is currently a dense representation of the adjacency matrix,
+    // so for very large, very dense, or very skewed degree distribution
+    // graphs this could be a bottleneck in the workflow.
     //
     // if you have a different input data type, you need only create a new I/O
-    // wrapped in an `adjacency` class that inherits from
-    // `psqz::graph::adjacency` to use this same workflow, possibly in addition
-    // to a new `parameters` class to handle new parameters of your I/O.
+    // wrapped in an `edge_streamer` class that inherits from
+    // `psqz::graph::edge_streamer` to use this same workflow, possibly in
+    // addition to a new `parameters_type` class to handle parameters of your
+    // I/O.
     adjacency_type adjacency = adjacency_streamer_fn{handler}();
 
     // collect the ground truth
@@ -99,10 +102,11 @@ struct power_iteration_kron {
     // communities for each of the product vertices.
     //
     // if you have a different input data type, you need only create a new I/O
-    // wrapped in a `truth` class that inherits from `psqz::graph::truth` to use
-    // this same workflow, possibly in addition to a new `parameters` class to
-    // hander new parameters of your I/O.
-    truth_type truth = truth_fn{handler}();
+    // wrapped in a `community_streamer` class that inherits from
+    // `psqz::graph::community_streamer` to use this same workflow, possibly in
+    // addition to a new `parameters` class to hander new parameters of your
+    // I/O.
+    truth_type truth = truth_streamer_fn{handler}();
     if (!params.file_directory().empty()) {
       std::filesystem::path path(params.file_directory());
       psqz::create_directory_if_not_exists(path);

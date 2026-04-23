@@ -19,8 +19,8 @@ template <typename HandlerType>
 using adjacency_normalizer = psqz::kron::detail::adjacency_normalizer<
     HandlerType, psqz::graph::detail::adjacency_normalizer>;
 template <typename HandlerType>
-using truth =
-    psqz::kron::detail::truth<HandlerType, psqz::graph::detail::truth>;
+using community_streamer = psqz::kron::detail::community_streamer<
+    HandlerType, psqz::graph::detail::community_streamer>;
 template <typename HandlerType>
 using queries =
     psqz::kron::detail::queries<HandlerType, psqz::graph::detail::queries>;
@@ -34,7 +34,8 @@ using normalized_adjacency_streamer =
     psqz::graph::normalized_adjacency_streamer<HandlerType, core::edge_streamer,
                                                core::adjacency_normalizer>;
 template <typename HandlerType>
-using truth = psqz::graph::truth<HandlerType, core::truth>;
+using truth_streamer =
+    psqz::graph::truth_streamer<HandlerType, core::community_streamer>;
 template <typename HandlerType>
 using queries = psqz::graph::queries<HandlerType, core::queries>;
 }  // namespace psqz::kron

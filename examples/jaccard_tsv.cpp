@@ -76,7 +76,7 @@ struct jaccard_tsv {
                     adjacency_type, float, std::size_t>;
 
   using adjacency_streamer_fn = psqz::tsv::adjacency_streamer<handler_type>;
-  using truth_fn              = psqz::tsv::truth<handler_type>;
+  using truth_streamer_fn     = psqz::tsv::truth_streamer<handler_type>;
   using query_fn              = psqz::tsv::queries<handler_type>;
 
   using index_type            = handler_type::index_type;
@@ -102,18 +102,18 @@ struct jaccard_tsv {
     // challenge data.
     //
     // `adjacency_streamer_fn` is a functor that takes the `handler` and, upon
-    // invocation, returns an `adjacency_type` object, which is a ygm container
-    // with `index_type` keys and `adjacency_vec_type` values. Internally, it
-    // reads from a tsv file listing edges in an SBM graph.
+    // invocation, returns an `adjacency_type` object, which wraps a ygm
+    // container(s) with `index_type` keys and `adjacency_vec_type` values.
     //
     // This is currently a dense representation of the adjacency matrix, so for
     // very large, very dense, or very skewed degree distribution graphs this
     // could be a bottleneck in the workflow.
     //
     // if you have a different input data type, you need only create a new I/O
-    // wrapped in an `adjacency` class that inherits from
-    // `psqz::graph::adjacency` to use this same workflow, possibly in addition
-    // to a new `parameters` class to handle new parameters of your I/O.
+    // wrapped in an `edge_streamer` class that inherits from
+    // `psqz::graph::edge_streamer` to use this same workflow, possibly in
+    // addition to a new `parameters_type` class to handle parameters of your
+    // I/O.
     adjacency_type adjacency = adjacency_streamer_fn{handler}();
 
     // report information
@@ -164,7 +164,7 @@ struct jaccard_tsv {
       psqz::create_directory_if_not_exists(path / "features");
       psqz::write_feature_files(SAp1, path, "SAp1");
       if (std::filesystem::exists(params.truth_filename())) {
-        truth_type truth = truth_fn{handler}();
+        truth_type truth = truth_streamer_fn{handler}();
         world.barrier();
         psqz::write_truth_files(truth, path);
       }

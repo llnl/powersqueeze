@@ -46,7 +46,7 @@ struct streaming_pi_tsv {
                     adjacency_type, float, std::size_t>;
 
   using adjacency_streamer_fn = psqz::tsv::adjacency_streamer<handler_type>;
-  using truth_fn              = psqz::tsv::truth<handler_type>;
+  using truth_streamer_fn     = psqz::tsv::truth_streamer<handler_type>;
 
   using index_type            = handler_type::index_type;
   using feature_type          = handler_type::feature_type;
@@ -76,13 +76,14 @@ struct streaming_pi_tsv {
     // challenge data in tsv file(s).
     //
     // `adjacency_streamer_fn` is a functor that takes the `handler` and, upon
-    // invocation, returns an `adjacency_type` object, which is a ygm container
-    // with `index_type` keys and `adjacency_vec_type` values.
+    // invocation, returns an `adjacency_type` object, which wraps a ygm
+    // container(s) with `index_type` keys and `adjacency_vec_type` values.
     //
     // if you have a different input data type, you need only create a new I/O
-    // wrapped in an `adjacency` class that inherits from
-    // `psqz::graph::adjacency` to use this same workflow, possibly in addition
-    // to a new `parameters_type` class to handle parameters of your I/O.
+    // wrapped in an `edge_streamer` class that inherits from
+    // `psqz::graph::edge_streamer` to use this same workflow, possibly in
+    // addition to a new `parameters_type` class to handle parameters of your
+    // I/O.
     adjacency_type adjacency = adjacency_streamer_fn{handler}();
 
     // collect the ground truth
@@ -90,16 +91,17 @@ struct streaming_pi_tsv {
     // this implementation assumes that the data is formatted like HPEC graph
     // challenge data tsv file(s).
     //
-    // `truth_fn` is a functor that takes the `handler` and, upon invocation,
-    // returns a `truth_type` object, which is a ygm container with `index_type`
-    // keys and `cmty_type` values. this container maps each vertex to its
-    // ground truth community.
+    // `truth_streamer_fn` is a functor that takes the `handler` and, upon
+    // invocation, returns a `truth_type` object, which wraps a ygm container
+    // with `index_type` keys and `cmty_type` values. this container maps each
+    // vertex to its ground truth community.
     //
     // if you have a different input data type, you need only create a new I/O
-    // wrapped in a `truth` class that inherits from `psqz::graph::truth` to use
-    // this same workflow, possibly in addition to a new `parameters` class to
-    // hander new parameters of your I/O.
-    truth_type truth = truth_fn{handler}();
+    // wrapped in a `community_streamer` class that inherits from
+    // `psqz::graph::community_streamer` to use this same workflow, possibly in
+    // addition to a new `parameters` class to hander new parameters of your
+    // I/O.
+    truth_type truth = truth_streamer_fn{handler}();
     if (!params.file_directory().empty()) {
       std::filesystem::path path(params.file_directory());
       psqz::create_directory_if_not_exists(path);
