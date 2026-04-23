@@ -13,20 +13,17 @@ namespace detail {
 
 template <typename HandlerType, template <typename> class ReaderType>
 struct truth {
-  using handler_type       = HandlerType;
-  using parameters_type    = typename handler_type::parameters_type;
-  using index_type         = typename handler_type::index_type;
-  using index_vec_type     = typename handler_type::index_vec_type;
-  using cmty_type          = typename handler_type::cmty_type;
-  using weight_type        = typename handler_type::weight_type;
-  using adjacency_elt_type = typename handler_type::adjacency_elt_type;
-  using adjacency_vec_type = typename handler_type::adjacency_vec_type;
-  using adjacency_type     = typename handler_type::adjacency_type;
-  using truth_type         = typename handler_type::truth_type;
-  using container_type     = truth_type;
-  using element_type       = cmty_type;
-  using edge_type          = edge<index_type, weight_type>;
-  using reader_type        = ReaderType<edge_type>;
+  using handler_type    = HandlerType;
+  using parameters_type = typename handler_type::parameters_type;
+  using index_type      = typename handler_type::index_type;
+  using index_vec_type  = typename handler_type::index_vec_type;
+  using cmty_type       = typename handler_type::cmty_type;
+  using weight_type     = typename handler_type::weight_type;
+  using truth_type      = typename handler_type::truth_type;
+  using container_type  = truth_type;
+  using element_type    = cmty_type;
+  using edge_type       = edge<index_type, weight_type>;
+  using reader_type     = ReaderType<edge_type>;
 
  protected:
   handler_type          &_handler;

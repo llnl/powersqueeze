@@ -50,15 +50,6 @@ struct edge_streamer {
 
   virtual std::string local_map_name() const = 0;
 
-  template <typename... Args>
-  adjacency_type spawn(Args... args) {
-    adjacency_vec_type dummy;
-    dummy.reserve(500);
-
-    return handler_type::template spawn<adjacency_vec_type>(
-        _comm, dummy, _params.vertex_count());
-  }
-
   virtual reader_type spawn_reader() = 0;
 
   template <typename... Args>
@@ -116,17 +107,10 @@ struct adjacency_normalizer {
 
   virtual std::string local_map_name() const = 0;
 
-  template <typename... Args>
-  adjacency_type spawn(Args... args) {
-    adjacency_vec_type dummy;
-    dummy.reserve(500);
-
-    return handler_type::template spawn<adjacency_vec_type>(
-        _comm, dummy, _params.vertex_count());
-  }
-
   // A stand-in for loading from metall. Should only be used in that context.
-  adjacency_type operator()() { return spawn(); }
+  adjacency_type operator()() {
+    return adjacency_type{_comm, _params.vertex_count()};
+  }
 
   // This uses O(m) communication, which could be a problem for big graphs.
   adjacency_type operator()(adjacency_type &adjacency_hat) {
