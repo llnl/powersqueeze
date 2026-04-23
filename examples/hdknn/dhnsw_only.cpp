@@ -9,6 +9,7 @@
 
 #include <saltatlas/dhnsw/dhnsw.hpp>
 
+#include <psqz/graph/adjacency.hpp>
 #include <psqz/utils/reader.hpp>
 
 #include <ygm/detail/collective.hpp>
@@ -70,9 +71,11 @@ float my_l2_sqr(const std::vector<float> &x, const std::vector<float> &y) {
 }
 
 struct dhnsw_only {
-  using handler_type =
-      hdknn::handler<parameters_type, 8, 1, psqz::ygm_map, std::vector, float,
-                     std::size_t, float, std::size_t>;
+  using adjacency_type =
+      psqz::graph::square_undirected_adjacency<psqz::ygm_map, std::vector,
+                                               std::size_t, float>;
+  using handler_type = hdknn::handler<parameters_type, 8, 1, adjacency_type,
+                                      float, std::size_t, float>;
 
   using precision_fn    = hdknn::metric::precision<handler_type>;
   using recall_fn       = hdknn::metric::recall<handler_type>;
@@ -85,7 +88,6 @@ struct dhnsw_only {
   using dist_type             = handler_type::dist_type;
   using adjacency_elt_type    = handler_type::adjacency_elt_type;
   using adjacency_vec_type    = handler_type::adjacency_vec_type;
-  using adjacency_type        = handler_type::adjacency_type;
   using truth_type            = handler_type::truth_type;
   using query_type            = handler_type::query_type;
   using sketch_container_type = handler_type::sketch_container_type;

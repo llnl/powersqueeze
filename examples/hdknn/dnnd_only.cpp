@@ -7,6 +7,7 @@
 #include <hdknn/metrics/recall.hpp>
 #include <hdknn/metrics/search_depth.hpp>
 
+#include <psqz/graph/adjacency.hpp>
 #include <psqz/tsv/graph.hpp>
 #include <psqz/utils/reader.hpp>
 
@@ -68,9 +69,11 @@ struct parameters_type : public hdknn::dnnd::parameters<psqz::parameters> {
 constexpr auto parse_cmd_line = psqz::parse_cmd_line<parameters_type>;
 
 struct dnnd_only {
-  using handler_type =
-      hdknn::handler<parameters_type, 8, 1, psqz::ygm_map, std::vector, float,
-                     std::size_t, float, std::size_t>;
+  using adjacency_type =
+      psqz::graph::square_undirected_adjacency<psqz::ygm_map, std::vector,
+                                               std::size_t, float>;
+  using handler_type = hdknn::handler<parameters_type, 8, 1, adjacency_type,
+                                      float, std::size_t, float>;
 
   using query_fn = psqz::tsv::queries<handler_type>;
 
@@ -85,7 +88,6 @@ struct dnnd_only {
   using dist_type             = handler_type::dist_type;
   using adjacency_elt_type    = handler_type::adjacency_elt_type;
   using adjacency_vec_type    = handler_type::adjacency_vec_type;
-  using adjacency_type        = handler_type::adjacency_type;
   using truth_type            = handler_type::truth_type;
   using query_type            = handler_type::query_type;
   using sketch_container_type = handler_type::sketch_container_type;

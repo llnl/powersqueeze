@@ -13,10 +13,10 @@ template <std::size_t RangeSize, std::size_t ReplicationCount,
           typename AdjacencyType, typename SketchContainerType>
 void accumulate(AdjacencyType &adjacency, SketchContainerType &SAp1,
                 const std::uint64_t &random_seed) {
-  using index_type         = typename AdjacencyType::key_type;
-  using adjacency_vec_type = typename AdjacencyType::mapped_type;
-  using adjacency_elt_type = typename adjacency_vec_type::value_type;
-  using weight_type        = typename adjacency_elt_type::second_type;
+  using index_type         = typename AdjacencyType::index_type;
+  using adjacency_vec_type = typename AdjacencyType::adjacency_vec_type;
+  using adjacency_elt_type = typename AdjacencyType::adjacency_elt_type;
+  using weight_type        = typename AdjacencyType::weight_type;
   using feature_vec_type   = typename SketchContainerType::mapped_type;
   using feature_type       = typename feature_vec_type::value_type;
   static_assert(
@@ -36,8 +36,9 @@ void accumulate(AdjacencyType &adjacency, SketchContainerType &SAp1,
       std::make_shared<transform_type>(random_seed));
   sketch_type col_sketch(transform_ptr);
 
-  adjacency.for_all([&col_sketch, &SAp1](const index_type         &col_idx,
-                                         const adjacency_vec_type &col_adj) {
+  adjacency.for_all_rows([&col_sketch, &SAp1](
+                             const index_type         &col_idx,
+                             const adjacency_vec_type &col_adj) {
     col_sketch.clear();
     for (const adjacency_elt_type &row : col_adj) {
       const index_type  &row_idx = row.first;

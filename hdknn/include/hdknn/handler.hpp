@@ -8,23 +8,15 @@
 namespace hdknn {
 
 template <typename ParametersType, std::size_t RangeSize,
-          std::size_t ReplicationCount,
-          template <typename, typename> class ContainerType = psqz::ygm_array,
-          template <typename> class VecType                 = std::vector,
-          typename WeightType = float, typename IndexType = std::size_t,
+          std::size_t ReplicationCount, typename AdjacencyType,
           typename FeatureType = float, typename CmtyType = std::size_t,
           typename DistType = float>
 class handler
     : public psqz::handler<ParametersType, RangeSize, ReplicationCount,
-                           ContainerType, VecType, WeightType, IndexType,
-                           FeatureType, CmtyType> {
+                           AdjacencyType, FeatureType, CmtyType> {
  public:
-  using base_type =
-      psqz::handler<ParametersType, RangeSize, ReplicationCount, ContainerType,
-                    VecType, WeightType, IndexType, FeatureType, CmtyType>;
-
-  template <typename Index, typename Point>
-  using container_type = typename base_type::container_type<Index, Point>;
+  using base_type = psqz::handler<ParametersType, RangeSize, ReplicationCount,
+                                  AdjacencyType, FeatureType, CmtyType>;
 
   using parameters_type       = typename base_type::parameters_type;
   using index_type            = typename base_type::index_type;

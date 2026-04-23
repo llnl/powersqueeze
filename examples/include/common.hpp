@@ -107,10 +107,10 @@ void sketch_accounting(HandlerType          &handler,
 template <typename HandlerType, typename AdjacencyType, typename TruthType>
 void adjacency_report(HandlerType &handler, AdjacencyType &adjacency,
                       TruthType &truth) {
-  using index_type         = typename AdjacencyType::key_type;
-  using adjacency_vec_type = typename AdjacencyType::mapped_type;
-  using adjacency_elt_type = typename adjacency_vec_type::value_type;
-  using weight_type        = typename adjacency_elt_type::second_type;
+  using index_type         = typename AdjacencyType::index_type;
+  using adjacency_vec_type = typename AdjacencyType::adjacency_vec_type;
+  using adjacency_elt_type = typename AdjacencyType::adjacency_elt_type;
+  using weight_type        = typename AdjacencyType::weight_type;
   using cmty_type          = typename TruthType::mapped_type;
   static_assert(std::is_same<index_type, typename TruthType::key_type>());
   static_assert(
@@ -122,7 +122,7 @@ void adjacency_report(HandlerType &handler, AdjacencyType &adjacency,
   static index_type inter_edge_count{0};
   std::size_t       edge_count{0};
   std::size_t       adj_empties{0};
-  adjacency.for_all(
+  adjacency.for_all_rows(
       [&truth, &edge_count, &adj_empties](const index_type         &col_idx,
                                           const adjacency_vec_type &col_adj) {
         edge_count += col_adj.size();
@@ -202,10 +202,10 @@ void adjacency_report(HandlerType &handler, AdjacencyType &adjacency,
 
 template <typename HandlerType, typename AdjacencyType>
 void adjacency_report(HandlerType &handler, AdjacencyType &adjacency) {
-  using index_type         = typename AdjacencyType::key_type;
-  using adjacency_vec_type = typename AdjacencyType::mapped_type;
-  using adjacency_elt_type = typename adjacency_vec_type::value_type;
-  using weight_type        = typename adjacency_elt_type::second_type;
+  using index_type         = typename AdjacencyType::index_type;
+  using adjacency_vec_type = typename AdjacencyType::adjacency_vec_type;
+  using adjacency_elt_type = typename AdjacencyType::adjacency_elt_type;
+  using weight_type        = typename AdjacencyType::weight_type;
   static_assert(
       std::is_same<index_type, typename adjacency_elt_type::first_type>());
 
@@ -213,7 +213,7 @@ void adjacency_report(HandlerType &handler, AdjacencyType &adjacency) {
 
   std::size_t edge_count{0};
   std::size_t adj_empties{0};
-  adjacency.for_all(
+  adjacency.for_all_rows(
       [&edge_count, &adj_empties](const index_type         &col_idx,
                                   const adjacency_vec_type &col_adj) {
         edge_count += col_adj.size();

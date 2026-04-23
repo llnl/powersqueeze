@@ -1,6 +1,7 @@
 // Copyright 2023-2026 Lawrence Livermore National Security, LLC and other
 // powersqueeze Project Developers.See the top-level COPYRIGHT file for details.
 
+#include <psqz/graph/adjacency.hpp>
 #include <psqz/handler.hpp>
 #include <psqz/sketch/accumulate.hpp>
 #include <psqz/sketch/interleaved.hpp>
@@ -172,10 +173,12 @@ constexpr auto parse_cmd_line = psqz::parse_cmd_line<parameters_type>;
 // `power_iteration_tsv::operator()` as the body of the main function.
 template <std::size_t RangeSize, std::size_t ReplicationCount>
 struct power_iteration_tsv {
+  using adjacency_type =
+      psqz::graph::square_undirected_adjacency<psqz::ygm_array, std::vector,
+                                               std::size_t, float>;
   using handler_type =
       psqz::handler<parameters_type, RangeSize, ReplicationCount,
-                    psqz::ygm_array, std::vector, float, std::size_t, float,
-                    std::string>;
+                    adjacency_type, float, std::size_t>;
 
   using adjacency_streamer_fn = psqz::tsv::adjacency_streamer<handler_type>;
   using truth_fn              = wdc::truth<handler_type>;
@@ -186,7 +189,6 @@ struct power_iteration_tsv {
   using cmty_type             = handler_type::cmty_type;
   using adjacency_vec_type    = handler_type::adjacency_vec_type;
   using adjacency_elt_type    = handler_type::adjacency_elt_type;
-  using adjacency_type        = handler_type::adjacency_type;
   using truth_type            = handler_type::truth_type;
   using sketch_container_type = handler_type::sketch_container_type;
 

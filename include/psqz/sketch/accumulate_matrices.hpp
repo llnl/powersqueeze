@@ -20,10 +20,10 @@ std::vector<MatrixType> accumulate_matrices(AdjacencyType       &adjacency,
                                             SketchContainerType &SAp1,
                                             const std::uint64_t &random_seed,
                                             const int transform_count) {
-  using index_type         = typename AdjacencyType::key_type;
-  using adjacency_vec_type = typename AdjacencyType::mapped_type;
-  using adjacency_elt_type = typename adjacency_vec_type::value_type;
-  using weight_type        = typename adjacency_elt_type::second_type;
+  using index_type         = typename AdjacencyType::index_type;
+  using adjacency_vec_type = typename AdjacencyType::adjacency_vec_type;
+  using adjacency_elt_type = typename AdjacencyType::adjacency_elt_type;
+  using weight_type        = typename AdjacencyType::weight_type;
   using feature_vec_type   = typename SketchContainerType::mapped_type;
   using feature_type       = typename feature_vec_type::value_type;
   static_assert(
@@ -110,31 +110,32 @@ std::vector<MatrixType> accumulate_matrices(AdjacencyType       &adjacency,
 
   single_sketch_type col_sketch(single_transform_ptrs[0]);
 
-  adjacency.for_all([&col_sketch, &SAp1, &double_sketches,
-                     &final_double_sketch](const index_type         &col_idx,
-                                           const adjacency_vec_type &col_adj) {
-    col_sketch.clear();
-    for (const adjacency_elt_type &row : col_adj) {
-      const index_type  &row_idx = row.first;
-      const weight_type &wgt     = row.second;
-      col_sketch.insert(row_idx, wgt);
-      for (double_sketch_type &double_sketch : double_sketches) {
-        double_sketch.insert({row_idx, col_idx}, wgt);
-      }
-      final_double_sketch.insert({row_idx, col_idx}, wgt);
-    }
+  adjacency.for_all_rows(
+      [&col_sketch, &SAp1, &double_sketches, &final_double_sketch](
+          const index_type &col_idx, const adjacency_vec_type &col_adj) {
+        col_sketch.clear();
+        for (const adjacency_elt_type &row : col_adj) {
+          const index_type  &row_idx = row.first;
+          const weight_type &wgt     = row.second;
+          col_sketch.insert(row_idx, wgt);
+          for (double_sketch_type &double_sketch : double_sketches) {
+            double_sketch.insert({row_idx, col_idx}, wgt);
+          }
+          final_double_sketch.insert({row_idx, col_idx}, wgt);
+        }
 
-    // assumes that adjacency and SAp1 share the same partitioning scheme.
-    // induces unnecessary copies, but not clear if there is an easy way to
-    // avoid them.
-    auto update_lambda = [](const index_type &col_idx, feature_vec_type &sketch,
-                            const feature_vec_type &col_sketch) {
-      std::transform(std::begin(sketch), std::end(sketch),
-                     std::begin(col_sketch), std::begin(sketch),
-                     std::plus<feature_type>());
-    };
-    SAp1.local_visit(col_idx, update_lambda, col_sketch.scaled_registers());
-  });
+        // assumes that adjacency and SAp1 share the same partitioning scheme.
+        // induces unnecessary copies, but not clear if there is an easy way to
+        // avoid them.
+        auto update_lambda = [](const index_type       &col_idx,
+                                feature_vec_type       &sketch,
+                                const feature_vec_type &col_sketch) {
+          std::transform(std::begin(sketch), std::end(sketch),
+                         std::begin(col_sketch), std::begin(sketch),
+                         std::plus<feature_type>());
+        };
+        SAp1.local_visit(col_idx, update_lambda, col_sketch.scaled_registers());
+      });
   comm.barrier();
 
   // We create the parallel two-sided matrices

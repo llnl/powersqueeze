@@ -7,50 +7,12 @@
 #include <psqz/metall.hpp>
 #endif
 
-#include <psqz/graph/graph.hpp>
-
 #include <ygm/comm.hpp>
 
 #include <cmath>
 #include <sstream>
 
 namespace psqz::graph {
-
-// template <template <typename, typename> class ContainerType,
-//           template <typename> class VecType = std::vector,
-//           typename IndexType                = std::size_t>
-// struct square_undirected_adjacency {
-//   using index_type     = IndexType;
-//   using index_vec_type = VecType<index_type>;
-
-//   using container_type = ContainerType<index_type, index_vec_type>;
-
-//  private:
-//   container_type row_container;
-
-//  public:
-//   square_undirected_adjacency(ygm::comm            &comm,
-//                               const index_vec_type &default_value,
-//                               std::size_t           vertex_count)
-//       : row_container(
-//             psqz::spawn<ContainerType, index_type, Point>(comm, dummy, size))
-//             {}
-
-//   template <typename... Args>
-//   void for_all_rows(Args &...args) {
-//     row_container.for_all(args...);
-//   }
-
-//   template <typename... Args>
-//   void for_all_cols(Args &...args) {
-//     row_container.for_all_cols(args...);
-//   }
-
-//   template <typename... Args>
-//   void for_all_cols(Args &...args) {
-//     row_container.for_all_cols(args...);
-//   }
-// };
 
 namespace detail {
 template <typename HandlerType, template <typename> class ReaderType>
@@ -68,7 +30,7 @@ struct edge_streamer {
   using container_type     = adjacency_type;
   using element_type       = adjacency_elt_type;
   using vector_type        = adjacency_vec_type;
-  using edge_type          = edge<index_type, weight_type>;
+  using edge_type          = typename adjacency_type::edge_type;
   using reader_type        = ReaderType<edge_type>;
 
  protected:
@@ -107,22 +69,11 @@ struct edge_streamer {
   virtual adjacency_type load_adjacency() {
     reader_type reader = spawn_reader();
 
-    adjacency_type adjacency = spawn();
+    adjacency_type adjacency(_comm, _params.vertex_count());
 
-    bool undirected = _params.undirected();
-
-    auto A_insert_lambda =
-        [](const index_type &row_idx, adjacency_vec_type &row_adj,
-           const adjacency_elt_type &elt) { row_adj.push_back(elt); };
-    reader.for_all(
-        [&adjacency, &A_insert_lambda, &undirected](const edge_type &edge) {
-          adjacency.async_visit(edge.src, A_insert_lambda,
-                                adjacency_elt_type{edge.dst, edge.wgt});
-          if (undirected) {
-            adjacency.async_visit(edge.dst, A_insert_lambda,
-                                  adjacency_elt_type{edge.src, edge.wgt});
-          }
-        });
+    reader.for_all([&adjacency](const edge_type &edge) {
+      adjacency.async_insert_edge(edge);
+    });
     _comm.barrier();
     _handler.chirp_metric(name() + " read time");
     return adjacency;

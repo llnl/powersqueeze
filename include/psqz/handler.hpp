@@ -12,35 +12,34 @@
 #include <iomanip>
 
 namespace psqz {
-
 template <typename ParametersType, std::size_t RangeSize,
-          std::size_t ReplicationCount,
-          template <typename, typename> class ContainerType = psqz::ygm_array,
-          template <typename> class VecType                 = std::vector,
-          typename WeightType = float, typename IndexType = std::size_t,
+          std::size_t ReplicationCount, typename AdjacencyType,
           typename FeatureType = float, typename CmtyType = std::size_t>
 class handler {
  public:
-  template <typename Index, typename Point>
-  using container_type = ContainerType<Index, Point>;
+  using parameters_type = ParametersType;
+  using feature_type    = FeatureType;
+  using cmty_type       = CmtyType;
 
-  using parameters_type       = ParametersType;
-  using index_type            = IndexType;
-  using feature_type          = FeatureType;
-  using index_vec_type        = VecType<index_type>;
-  using feature_vec_type      = VecType<feature_type>;
-  using cmty_type             = CmtyType;
-  using weight_type           = WeightType;
-  using adjacency_elt_type    = std::pair<index_type, weight_type>;
-  using adjacency_vec_type    = VecType<adjacency_elt_type>;
-  using adjacency_type        = container_type<index_type, adjacency_vec_type>;
-  using truth_type            = ygm::container::map<index_type, cmty_type>;
-  using query_type            = ygm::container::set<index_type>;
-  using sketch_container_type = container_type<index_type, feature_vec_type>;
-  using degree_type           = float;
-  using degree_container_type = container_type<index_type, degree_type>;
-  using metrics_type          = Metrics;
-  using timer_type            = ygm::utility::timer;
+  using adjacency_type = AdjacencyType;
+
+  using index_type         = typename adjacency_type::index_type;
+  using weight_type        = typename adjacency_type::weight_type;
+  using index_vec_type     = typename adjacency_type::index_vec_type;
+  using feature_vec_type   = typename adjacency_type::vector_type<feature_type>;
+  using adjacency_elt_type = std::pair<index_type, weight_type>;
+  using adjacency_vec_type =
+      typename adjacency_type::vector_type<adjacency_elt_type>;
+
+  using truth_type = ygm::container::map<index_type, cmty_type>;
+  using query_type = ygm::container::set<index_type>;
+  using sketch_container_type =
+      typename adjacency_type::container_type<index_type, feature_vec_type>;
+  using degree_type = float;
+  using degree_container_type =
+      typename adjacency_type::container_type<index_type, degree_type>;
+  using metrics_type = Metrics;
+  using timer_type   = ygm::utility::timer;
 
   static constexpr std::size_t range_size        = RangeSize;
   static constexpr std::size_t replication_count = ReplicationCount;
@@ -91,10 +90,10 @@ class handler {
   void reset_timer() { _timer.reset(); }
 
   template <typename Point>
-  static ContainerType<index_type, Point> spawn(ygm::comm       &comm,
-                                                const Point     &dummy,
-                                                const index_type size) {
-    return psqz::spawn<ContainerType, index_type, Point>(comm, dummy, size);
+  static typename adjacency_type::container_type<index_type, Point> spawn(
+      ygm::comm &comm, const Point &dummy, const index_type size) {
+    return psqz::spawn<typename adjacency_type::container_type, index_type,
+                       Point>(comm, dummy, size);
   }
 };
 

@@ -4,6 +4,7 @@
 // comment out if files are 0-indexed.
 #define TSV_DECREMENT
 
+#include <psqz/graph/adjacency.hpp>
 #include <psqz/handler.hpp>
 #include <psqz/sketch/accumulate_matrices.hpp>
 #include <psqz/sketch/interleaved.hpp>
@@ -37,10 +38,12 @@ template <std::size_t RangeSize, std::size_t ReplicationCount,
           std::size_t FinalRangeSize        = RangeSize,
           std::size_t FinalReplicationCount = ReplicationCount>
 struct streaming_pi_tsv {
+  using adjacency_type =
+      psqz::graph::square_undirected_adjacency<psqz::ygm_array, std::vector,
+                                               std::size_t, float>;
   using handler_type =
       psqz::handler<parameters_type, RangeSize, ReplicationCount,
-                    psqz::ygm_array, std::vector, double, std::size_t, double,
-                    std::size_t>;
+                    adjacency_type, float, std::size_t>;
 
   using adjacency_streamer_fn = psqz::tsv::adjacency_streamer<handler_type>;
   using truth_fn              = psqz::tsv::truth<handler_type>;
@@ -51,7 +54,6 @@ struct streaming_pi_tsv {
   using cmty_type             = handler_type::cmty_type;
   using adjacency_vec_type    = handler_type::adjacency_vec_type;
   using adjacency_elt_type    = handler_type::adjacency_elt_type;
-  using adjacency_type        = handler_type::adjacency_type;
   using truth_type            = handler_type::truth_type;
   using sketch_container_type = handler_type::sketch_container_type;
 
@@ -59,7 +61,7 @@ struct streaming_pi_tsv {
       Eigen::Matrix<feature_type, Eigen::Dynamic, Eigen::Dynamic>;
   using vector_type = Eigen::Vector<feature_type, Eigen::Dynamic>;
   using vector_container_type =
-      typename handler_type::container_type<index_type, vector_type>;
+      typename adjacency_type::container_type<index_type, vector_type>;
 
   void operator()(ygm::comm &world, const parameters_type &params) const {
     // the `handler`is a convenience struct that holds all of the relevant types

@@ -10,10 +10,10 @@ namespace psqz::sketch::interleaved {
 template <typename AdjacencyType, typename SketchContainerType>
 void spMV(AdjacencyType &adjacency, SketchContainerType &current_sketch,
           SketchContainerType &next_sketch) {
-  using index_type         = typename AdjacencyType::key_type;
-  using adjacency_vec_type = typename AdjacencyType::mapped_type;
-  using adjacency_elt_type = typename adjacency_vec_type::value_type;
-  using weight_type        = typename adjacency_elt_type::second_type;
+  using index_type         = typename AdjacencyType::index_type;
+  using adjacency_vec_type = typename AdjacencyType::adjacency_vec_type;
+  using adjacency_elt_type = typename AdjacencyType::adjacency_elt_type;
+  using weight_type        = typename AdjacencyType::weight_type;
   using feature_vec_type   = typename SketchContainerType::mapped_type;
   using feature_type       = typename feature_vec_type::value_type;
   static_assert(
@@ -44,7 +44,7 @@ void spMV(AdjacencyType &adjacency, SketchContainerType &current_sketch,
                 col_sketch);
           }
         };
-        adjacency.local_visit(col_idx, adj_visitor, col_sketch);
+        adjacency.local_row_visit(col_idx, adj_visitor, col_sketch);
       });
 
   current_sketch.comm().barrier();
