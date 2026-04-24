@@ -134,8 +134,8 @@ struct jaccard_tsv {
     // reallocation during the accumulation. the values of this container are
     // the truncated, power-iteration-embedded vectors that can be used in
     // downstream metric applications.
-    feature_vec_type dummy(handler_type::register_count *
-                           handler_type::replication_count);
+    feature_vec_type dummy(
+        feature_vec_type::Zero(handler_type::register_count));
 
     sketch_container_type SAp1(world, params.vertex_count(), dummy);
     psqz::sketch::accumulate<RangeSize, ReplicationCount>(adjacency, SAp1,
@@ -149,7 +149,10 @@ struct jaccard_tsv {
           SAp1.async_visit(
               idx,
               [](const index_type &idx, feature_vec_type &sketch,
-                 const feature_type &size) { sketch.push_back(size); },
+                 const feature_type &size) {
+                sketch.resize(handler_type::register_count + 1);
+                sketch(handler_type::register_count) = size;
+              },
               adj_vec.size());
         });
     handler.comm().barrier();

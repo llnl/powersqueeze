@@ -37,9 +37,7 @@ void spMV(AdjacencyType &adjacency, SketchContainerType &current_sketch,
                 row_idx,
                 [](const index_type &row_idx, feature_vec_type &row_sketch,
                    const feature_vec_type &col_sketch) {
-                  std::transform(std::begin(row_sketch), std::end(row_sketch),
-                                 std::begin(col_sketch), std::begin(row_sketch),
-                                 std::plus<feature_type>());
+                  row_sketch += col_sketch;
                 },
                 col_sketch);
           }

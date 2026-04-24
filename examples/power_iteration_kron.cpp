@@ -129,7 +129,8 @@ struct power_iteration_kron {
     // case we use a ygm::container::array, so we create dummy vector to
     // populate the array with zeros upon creation to eliminate memory
     // reallocation during the accumulation.
-    feature_vec_type dummy(handler_type::register_count);
+    feature_vec_type dummy(
+        feature_vec_type::Zero(handler_type::register_count));
 
     sketch_container_type this_sketch(world, params.vertex_count(), dummy);
     psqz::sketch::accumulate<RangeSize, ReplicationCount>(

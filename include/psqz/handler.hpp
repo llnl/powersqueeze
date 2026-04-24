@@ -9,6 +9,10 @@
 #include <ygm/container/set.hpp>
 #include <ygm/utility/timer.hpp>
 
+#include <krowkee/cereal/eigen.hpp>
+
+#include <Eigen/Dense>
+
 #include <iomanip>
 
 namespace psqz {
@@ -26,16 +30,16 @@ class handler {
   using index_type         = typename adjacency_type::index_type;
   using weight_type        = typename adjacency_type::weight_type;
   using index_vec_type     = typename adjacency_type::index_vec_type;
-  using feature_vec_type   = typename adjacency_type::vector_type<feature_type>;
   using adjacency_elt_type = std::pair<index_type, weight_type>;
   using adjacency_vec_type =
       typename adjacency_type::vector_type<adjacency_elt_type>;
 
-  using truth_type = ygm::container::map<index_type, cmty_type>;
-  using query_type = ygm::container::set<index_type>;
-  using sketch_container_type =
-      typename adjacency_type::container_type<index_type, feature_vec_type>;
-  using degree_type = float;
+  using truth_type            = ygm::container::map<index_type, cmty_type>;
+  using query_type            = ygm::container::set<index_type>;
+  using sketch_container_type = typename adjacency_type::container_type<
+      index_type, Eigen::Vector<feature_type, Eigen::Dynamic>>;
+  using feature_vec_type = typename sketch_container_type::mapped_type;
+  using degree_type      = float;
   using degree_container_type =
       typename adjacency_type::container_type<index_type, degree_type>;
   using metrics_type = Metrics;

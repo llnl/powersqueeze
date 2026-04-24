@@ -125,7 +125,8 @@ struct streaming_pi_tsv {
     // populate the array with zeros upon creation to eliminate memory
     // reallocation during the accumulation.
 
-    feature_vec_type dummy(handler_type::register_count);
+    feature_vec_type dummy(
+        feature_vec_type::Zero(handler_type::register_count));
 
     sketch_container_type this_sketch(world, params.vertex_count(), dummy);
     psqz::sketch::accumulate<RangeSize, ReplicationCount>(
@@ -151,14 +152,8 @@ struct streaming_pi_tsv {
         vector_type::Zero(FinalRangeSize * FinalReplicationCount));
     this_sketch.for_all(
         [&print_embedding, &partial_product, &params](
-            const index_type &idx, const feature_vec_type &sketch) {
-          vector_type first_embedding =
-              vector_type::Zero(handler_type::register_count);
-          for (int i(0); i < sketch.size(); ++i) {
-            first_embedding(static_cast<Eigen::Index>(i)) = (sketch[i]);
-          }
-          vector_type final_embedding =
-              first_embedding.transpose() * partial_product;
+            const index_type &idx, const feature_vec_type &embedding) {
+          vector_type final_embedding = embedding.transpose() * partial_product;
           print_embedding.local_insert(idx, final_embedding);
         });
     world.barrier();
@@ -195,8 +190,7 @@ int main(int argc, char **argv) {
     // `krowkee::dispatch` is a convenience function that dispatches a
     // compile-time sized version of the sketch workflow using runtime
     // parameters.
-    // krowkee::dispatch<streaming_pi_tsv, void>(params.range_size(),
-    // params.replication_count()}(world, params);
+    // streaming_pi_tsv<128, 4, 8, 1>{}(world, params);
     krowkee::dispatch_rectangular<streaming_pi_tsv, void>{
         params.range_size(), params.replication_count(),
         params.final_range_size(),

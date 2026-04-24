@@ -35,9 +35,7 @@ void spMV(AdjacencyType &adjacency, SketchContainerType &current_sketch,
             const index_type &row_idx = row.first;
             auto [itr, inserted]      = buffer.try_emplace(row_idx, col_sketch);
             if (!inserted) {
-              std::transform(std::begin(itr->second), std::end(itr->second),
-                             std::begin(col_sketch), std::begin(itr->second),
-                             std::plus<feature_type>());
+              itr->second += col_sketch;
             }
           }
         };
@@ -53,11 +51,7 @@ void spMV(AdjacencyType &adjacency, SketchContainerType &current_sketch,
     next_sketch.async_visit(
         row_idx,
         [](const index_type &row_idx, feature_vec_type &row_sketch,
-           const feature_vec_type &sum_sketch) {
-          std::transform(std::begin(row_sketch), std::end(row_sketch),
-                         std::begin(sum_sketch), std::begin(row_sketch),
-                         std::plus<feature_type>());
-        },
+           const feature_vec_type &sum_sketch) { row_sketch += sum_sketch; },
         sum_sketch);
   }
 

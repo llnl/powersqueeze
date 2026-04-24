@@ -29,34 +29,29 @@ void spMV(AdjacencyType &adjacency, SketchContainerType &current_sketch,
   auto       kv_lambda   = [&adjacency, next_sketch_ptr](
                        const index_type       &col_idx,
                        const feature_vec_type &col_sketch) {
-    auto csc_visit_lambda = [](const index_type         &col_idx,
-                               const adjacency_vec_type &col_adj,
-                               const feature_vec_type   &col_sketch,
-                               const auto                next_sketch_ptr) {
-      for (const adjacency_elt_type &row : col_adj) {
-        const index_type &row_idx = row.first;
-        auto [itr, inserted]      = buffer.try_emplace(row_idx, col_sketch);
-        if (!inserted) {
-          std::transform(std::begin(itr->second), std::end(itr->second),
-                         std::begin(col_sketch), std::begin(itr->second),
-                         std::plus<feature_type>());
-        }
-      }
-      if (buffer.size() > buffer_size) {
-        for (const auto [row_idx, sum_sketch] : buffer) {
-          next_sketch_ptr->async_visit(
-              row_idx,
-              [](const index_type &row_idx, feature_vec_type &row_sketch,
-                 const feature_vec_type &sum_sketch) {
-                std::transform(std::begin(row_sketch), std::end(row_sketch),
-                               std::begin(sum_sketch), std::begin(row_sketch),
-                               std::plus<feature_type>());
-              },
-              sum_sketch);
-        }
-        buffer.clear();
-      }
-    };
+    auto csc_visit_lambda =
+        [](const index_type &col_idx, const adjacency_vec_type &col_adj,
+           const feature_vec_type &col_sketch, const auto next_sketch_ptr) {
+          for (const adjacency_elt_type &row : col_adj) {
+            const index_type &row_idx = row.first;
+            auto [itr, inserted]      = buffer.try_emplace(row_idx, col_sketch);
+            if (!inserted) {
+              itr->second += col_sketch;
+            }
+          }
+          if (buffer.size() > buffer_size) {
+            for (const auto [row_idx, sum_sketch] : buffer) {
+              next_sketch_ptr->async_visit(
+                  row_idx,
+                  [](const index_type &row_idx, feature_vec_type &row_sketch,
+                     const feature_vec_type &sum_sketch) {
+                    row_sketch += sum_sketch;
+                  },
+                  sum_sketch);
+            }
+            buffer.clear();
+          }
+        };
     adjacency.async_visit(col_idx, csc_visit_lambda, col_sketch,
                           next_sketch_ptr);
   };
@@ -69,11 +64,7 @@ void spMV(AdjacencyType &adjacency, SketchContainerType &current_sketch,
     next_sketch.async_visit(
         row_idx,
         [](const index_type &row_idx, feature_vec_type &row_sketch,
-           const feature_vec_type &sum_sketch) {
-          std::transform(std::begin(row_sketch), std::end(row_sketch),
-                         std::begin(sum_sketch), std::begin(row_sketch),
-                         std::plus<feature_type>());
-        },
+           const feature_vec_type &sum_sketch) { row_sketch += sum_sketch; },
         sum_sketch);
   }
 

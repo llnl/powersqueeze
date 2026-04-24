@@ -14,8 +14,7 @@ void chebyshev_p2(SketchContainerType &SAp1, SketchContainerType &SAp2,
 
   auto add_lambda = [](const index_type &idx, feature_vec_type &sketch,
                        const feature_vec_type &incoming) {
-    std::transform(std::begin(sketch), std::end(sketch), std::begin(incoming),
-                   std::begin(sketch), std::plus<feature_type>());
+    sketch += incoming;
   };
 
   SAp1.for_all([&polynomial, &add_lambda](const index_type &idx,
@@ -54,8 +53,7 @@ void chebyshev_p3(SketchContainerType &SAp1, SketchContainerType &SAp2,
 
   auto add_lambda = [](const index_type &idx, feature_vec_type &sketch,
                        const feature_vec_type &incoming) {
-    std::transform(std::begin(sketch), std::end(sketch), std::begin(incoming),
-                   std::begin(sketch), std::plus<feature_type>());
+    sketch += incoming;
   };
 
   SAp1.for_all([&polynomial, &add_lambda](const index_type &idx,
@@ -102,8 +100,7 @@ void chebyshev_p4(SketchContainerType &SAp1, SketchContainerType &SAp2,
 
   auto add_lambda = [](const index_type &idx, feature_vec_type &sketch,
                        const feature_vec_type &incoming) {
-    std::transform(std::begin(sketch), std::end(sketch), std::begin(incoming),
-                   std::begin(sketch), std::plus<feature_type>());
+    sketch += incoming;
   };
 
   SAp1.for_all([&polynomial, &add_lambda](const index_type &idx,

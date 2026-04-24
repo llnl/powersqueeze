@@ -51,9 +51,7 @@ void accumulate(AdjacencyType &adjacency, SketchContainerType &SAp1,
     // avoid them.
     auto update_lambda = [](const index_type &col_idx, feature_vec_type &sketch,
                             const feature_vec_type &col_sketch) {
-      std::transform(std::begin(sketch), std::end(sketch),
-                     std::begin(col_sketch), std::begin(sketch),
-                     std::plus<feature_type>());
+      sketch += col_sketch;
     };
     SAp1.local_visit(col_idx, update_lambda, col_sketch.scaled_registers());
   });

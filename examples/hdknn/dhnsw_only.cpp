@@ -54,20 +54,15 @@ struct parameters_type : public hdknn::dhnsw::parameters<psqz::parameters> {
 
 constexpr auto parse_cmd_line = psqz::parse_cmd_line<parameters_type>;
 
-float my_l2_sqr(const std::vector<float> &x, const std::vector<float> &y) {
+float my_l2_sqr(const Eigen::Vector<float, Eigen::Dynamic> &x,
+                const Eigen::Vector<float, Eigen::Dynamic> &y) {
   if (x.size() != y.size()) {
     std::cerr << "Size mismatch for l2 distance (" << x.size() << " vs "
               << y.size() << ")" << std::endl;
     exit(-1);
   }
 
-  float dist_sqr{0.0};
-
-  for (std::size_t i = 0; i < x.size(); ++i) {
-    dist_sqr += (x[i] - y[i]) * (x[i] - y[i]);
-  }
-
-  return dist_sqr;
+  return (x - y).squaredNorm();
 }
 
 struct dhnsw_only {
